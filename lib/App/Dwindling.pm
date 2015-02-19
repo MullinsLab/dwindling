@@ -3,7 +3,6 @@ use warnings;
 
 package App::Dwindling {
     use FastQPE;
-    use List::MoreUtils qw< part >;
     use base 'Exporter::Tiny';
     our @EXPORT = qw( parse_args stages_from stages_to_text stages_to_csv );
 
@@ -13,14 +12,15 @@ package App::Dwindling {
             unless ($args[0] || '') eq ':::'
                 or not @args;
 
-        # Partition into (undef, [:::, fwd, rev], [:::, ...])
-        my $index = 0;
-        @args = part {
-            ($_ eq ':::' ? ++$index : $index) - 1
-        } @args;
-
-        # Remove first element (:::) from each stage arrayref
-        splice(@$_, 0, 1) for @args;
+        # Partition into ([:::, fwd, rev], [:::, ...])
+        my $index = -1;
+        for (splice @args) {
+            if ($_ eq ':::') {
+                $args[++$index] = [];
+            } else {
+                push @{ $args[$index] }, $_;
+            }
+        }
         return @args;
     }
 
