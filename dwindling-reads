@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 use FindBin qw< $Bin $Script >;
-use lib "$Bin/lib";
+use lib map { "$Bin/$_" } qw(lib inc/lib/perl5);
 
 use Getopt::Long::Descriptive;
 use App::Dwindling;
