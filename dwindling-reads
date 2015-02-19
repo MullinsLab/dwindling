@@ -1,0 +1,267 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use FindBin qw< $Script >;
+use Getopt::Long::Descriptive;
+use List::MoreUtils qw< part >;
+
+my ($opt, $usage) = describe_options(
+    "$Script %o ::: <stage1> <fwd.fastq> <rev.fastq> [orphans.fastq] [::: <stage2> ... [::: <stage3> ...]]",
+    [],
+    [ 'csv',  "output CSV" ],
+    [ 'help', "print usage message and exit" ],
+);
+print($usage->text), exit if $opt->help;
+
+my @args = parse_args(@ARGV) or do {
+    print STDERR "At least one set of FastQ files is required\n\n";
+    print STDERR $usage->text;
+    exit 1;
+};
+if (grep { $_ < 3 or $_ > 4 } map { scalar @$_ } @args) {
+    print STDERR
+        "Each stage requires a name, forward reads, and reverse reads.  Orphans are optional.\n",
+        "At least one of your stages has too few or too many arguments.\n\n",
+        $usage->text;
+    exit 1;
+}
+my @stages = stages_from(@args);
+if ($opt->csv) {
+    stages_to_csv(@stages);
+} else {
+    stages_to_text(@stages);
+}
+exit 0;
+
+sub parse_args {
+    my @args = @_;
+    unshift @args, ':::'
+        unless ($args[0] || '') eq ':::'
+            or not @args;
+
+    # Partition into (undef, [:::, fwd, rev], [:::, ...])
+    my $index = 0;
+    @args = part {
+        ($_ eq ':::' ? ++$index : $index) - 1
+    } @args;
+
+    # Remove first element (:::) from each stage arrayref
+    splice(@$_, 0, 1) for @args;
+    return @args;
+}
+
+sub stages_from {
+    my @stages;
+    for my $stage (@_) {
+        my ($name, $fwd, $rev, $orphans) = @$stage;
+        push @stages, FastQPE->new(
+            name    => $name,
+            fwd     => $fwd,
+            rev     => $rev,
+            (defined $orphans
+                ? (orphans => $orphans)
+                : ()),
+            ($stages[-1]
+                ? (parent => $stages[-1])
+                : ()),
+        );
+    }
+    return @stages;
+}
+
+sub stages_to_text {
+    my $count = 0;
+    for my $stage (@_) {
+        print "\n" if $count++;
+
+        my $width = length $stage->read_count;
+
+        # Basic counts and percentages
+        printf '%*d %s = %d forward + %d reverse',
+            $width,
+            $stage->read_count,
+            $stage->name,
+            $stage->read_count_tuple;
+        
+        if ($stage->parent) {
+            printf ' (= %0.2f%% of %s)',
+                $stage->percentage_of_parent,
+                $stage->parent->name;
+        }
+        print "\n";
+
+        # Orphans
+        if ($stage->orphans) {
+            printf '%*d single-end orphans',
+                $width, $stage->orphans->read_count;
+            if ($stage->parent) {
+                printf ' (= %0.2f%% of %s)',
+                    $stage->orphans->percentage_of_parent,
+                    $stage->orphans->parent->name;
+            }
+            print "\n";
+        }
+
+        # Discarded
+        if ($stage->parent) {
+            printf '%*d discarded%s (= %0.2f%% of %s)'."\n",
+                $width,
+                $stage->discarded_read_count,
+                ($stage->orphans ? ", including orphans" : ""),
+                $stage->discarded_percentage_of_parent,
+                $stage->parent->name;
+        }
+    }
+}
+
+sub stages_to_csv {
+    require Text::CSV;
+    my $csv = Text::CSV->new({ binary => 1, eol => $/ })
+        or die "Cannot use CSV: ", Text::CSV->error_diag;
+    my $out = \*STDOUT;
+
+    $csv->print($out, [qw(stage type count parent_stage percentage_of_parent discarded_from_parent)]);
+    for my $stage (@_) {
+        for my $type ("total", "fwd", "rev", "orphans") {
+            my $subset = $type eq "total" ? $stage : $stage->$type
+                or next;
+            $csv->print($out, [
+                $stage->name,
+                $type,
+                $subset->read_count,
+                ($subset->parent
+                    ? ($subset->parent->name, $subset->percentage_of_parent, $subset->discarded_read_count)
+                    : (undef) x 3)
+            ]);
+        }
+    }
+}
+
+BEGIN {
+    package ParentComparators {
+        use Moo::Role;
+
+        requires 'parent';
+        requires 'read_count';
+
+        sub percentage_of_parent {
+            $_[0]->read_count / $_[0]->parent->read_count * 100
+        }
+
+        sub discarded_read_count {
+            $_[0]->parent->read_count - $_[0]->read_count
+        }
+
+        sub discarded_percentage_of_parent {
+            $_[0]->discarded_read_count / $_[0]->parent->read_count * 100
+        }
+
+        1;
+    }
+
+    package FastQ {
+        use Moo;
+        use Types::Standard qw< InstanceOf Int >;
+        use String::ShellQuote qw< shell_quote >;
+        use namespace::clean;
+
+        has file => (
+            required => 1,
+            is       => 'ro',
+            isa      => sub { die "No such file '$_[0]' (or unreadable)" unless -r $_[0] },
+        );
+
+        has name => (
+            is      => 'ro',
+            default => sub { $_[0]->file },
+        );
+
+        has read_count => (
+            is  => 'lazy',
+            isa => Int,
+        );
+
+        has parent => (
+            is   => 'ro',
+            isa  => InstanceOf["FastQ", "FastQPE"],
+        );
+
+        with 'ParentComparators';
+
+        sub _build_read_count {
+            my $self  = shift;
+            my $file  = shell_quote($self->file);
+            my $lines = `zcat -f $file | wc -l`;
+            chomp $lines;
+
+            die "Malformed FastQ @{[$self->file]}?  Lines ($lines) is not divisible by 4."
+                unless $lines % 4 == 0;
+            return $lines / 4;
+        }
+
+        1;
+    }
+
+    package FastQPE {
+        use Moo;
+        use Types::Standard qw< InstanceOf Int >;
+        use namespace::clean;
+
+        has name => (
+            required => 1,
+            is       => 'ro',
+        );
+
+        has $_ => (
+            required => ($_ ne "orphans" ? 1 : 0),
+            is       => 'ro',
+            isa      => InstanceOf["FastQ"],
+        ) for qw(fwd rev orphans);
+
+        has read_count => (
+            is  => 'lazy',
+            isa => Int,
+        );
+
+        has parent => (
+            is   => 'ro',
+            isa  => InstanceOf["FastQPE"],
+        );
+
+        with 'ParentComparators';
+
+        sub _build_read_count {
+            $_[0]->fwd->read_count + $_[0]->rev->read_count
+        }
+
+        sub BUILDARGS {
+            my $self = shift;
+            my $args = $self->next::method(@_);
+
+            # Coerce fwd/rev/orphans from strings (filenames) into FastQ objects,
+            # optionally propogating parents.
+            for my $fq (qw(fwd rev orphans)) {
+                next if not defined $args->{$fq}
+                     or ref $args->{$fq};
+
+                my %fastq = (
+                    name => join(":", $args->{name}, $args->{$fq}),
+                    file => $args->{$fq},
+                );
+                if (my $parent = $args->{parent}) {
+                    $fastq{parent} = $fq eq 'orphans'
+                        ? $parent
+                        : $parent->$fq;
+                }
+                $args->{$fq} = FastQ->new(%fastq);
+            }
+            return $args;
+        }
+
+        sub read_count_tuple {
+            ($_[0]->fwd->read_count, $_[0]->rev->read_count)
+        }
+
+        1;
+    }
+} # END BEGIN
