@@ -50,7 +50,8 @@ Example output:
     161910 mapped = 80820 forward + 80820 reverse (= 100.17% of sickle)
       -270 discarded (= -0.17% of sickle)
 
-    (In this case, bwa mem found 270 reads with secondary mappings!)
+    (In this case, bwa mem found 270 reads with secondary mappings so the reads
+     are growing not dwindling!)
 
 .
 }
