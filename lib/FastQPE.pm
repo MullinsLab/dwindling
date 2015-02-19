@@ -29,7 +29,7 @@ package FastQPE {
         isa  => InstanceOf["FastQPE"],
     );
 
-    with 'ParentComparators';
+    with 'ParentComparators', 'Orphans';
 
     sub _build_read_count {
         $_[0]->fwd->read_count + $_[0]->rev->read_count

@@ -4,33 +4,66 @@ use warnings;
 use FindBin qw< $Bin $Script >;
 use lib map { "$Bin/$_" } qw(lib inc/lib/perl5);
 
-use Getopt::Long::Descriptive;
+use Getopt::Long;
 use App::Dwindling;
 
-my ($opt, $usage) = describe_options(
-    "$Script %o ::: <stage1> <fwd.fastq> <rev.fastq> [orphans.fastq] [::: <stage2> ... [::: <stage3> ...]]",
-    [],
-    [ 'csv',  "output CSV" ],
-    [ 'help', "print usage message and exit" ],
-);
-print($usage->text), exit if $opt->help;
+my %opt;
+GetOptions(\%opt, 'csv', 'help|h');
+
+sub usage {
+    my $Spacer = " " x length $Script;
+
+    "\n" . join("\n\n", @_, <<".");
+usage: $Script [--csv] ::: <stage1> <files> [::: <stage2> <files> [::: <stage3> <files>]
+       $Script --help
+
+This program collates summary information from a set of next-gen sequencing
+paired-end reads at each stage of your pipeline.
+
+Each stage is separated by three colons (:::), followed by two to four
+arguments.  The first argument is an arbitrary name of your choosing to
+identify that stage.  Both FastQ (uncompressed and gzipped) and BAM files are
+supported.  FastQ stages must specify at least two files for forward and
+reverse reads.  An optional third file may be specified for single-end orphans,
+such as those commonly produced by quality trimmers.  BAM stages must specify
+only a single .bam file.
+
+The standard Unix utilities zcat and wc must be installed, as well as samtools.
+
+  --csv     output CSV instead of formatted text
+  --help    print usage message and exit
+
+Examples:
+
+    $Script ::: raw     raw/ABC_R1.fq.gz raw/ABC_R2.fq.gz \\
+    $Spacer ::: sickle  trimmed/ABC_R1.fq trimmed/ABC_R2.fq trimmed/ABC_orphans.fq \\
+    $Spacer ::: mapped  ABC.bam
+
+Example output:
+
+    196300 raw = 98150 forward + 98150 reverse
+
+    161640 sickle = 80820 forward + 80820 reverse (= 82.34% of raw)
+      6278 single-end orphans (= 3.20% of raw)
+     34660 discarded, including orphans (= 17.66% of raw)
+
+    161910 mapped = 80820 forward + 80820 reverse (= 100.17% of sickle)
+      -270 discarded (= -0.17% of sickle)
+
+    (In this case, bwa mem found 270 reads with secondary mappings!)
+
+.
+}
+
+print(usage()), exit if $opt{help};
 
 my @args = parse_args(@ARGV) or do {
-    print STDERR "At least one set of FastQ files is required\n\n";
-    print STDERR $usage->text;
+    print STDERR usage("At least one set of files is required");
     exit 1;
 };
 
-if (grep { $_ < 3 or $_ > 4 } map { scalar @$_ } @args) {
-    print STDERR
-        "Each stage requires a name, forward reads, and reverse reads.  Orphans are optional.\n",
-        "At least one of your stages has too few or too many arguments.\n\n",
-        $usage->text;
-    exit 1;
-}
-
 my @stages = stages_from(@args);
-if ($opt->csv) {
+if ($opt{csv}) {
     stages_to_csv(@stages);
 } else {
     stages_to_text(@stages);
