@@ -48,7 +48,7 @@ The standard Unix utilities zcat and wc must be installed, as well as samtools.
 
 This software requires the following 
 
-* Perl 5.8.5 or newer (5.8.5 is absolutely ancient!)
+* Perl 5.14 or newer
 * zcat (distributed with gzip)
 * wc (distributed with coreutils)
 * [samtools](http://htslib.org)
