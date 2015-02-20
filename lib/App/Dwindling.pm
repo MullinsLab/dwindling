@@ -113,8 +113,11 @@ package App::Dwindling {
             or die "Cannot use CSV: ", Text::CSV->error_diag;
         my $out = \*STDOUT;
 
-        $csv->print($out, [qw(stage type count parent_stage percentage_of_parent discarded_from_parent)]);
+        $csv->print($out, [qw(stage_num stage type count parent_stage percentage_of_parent discarded_from_parent)]);
+
+        my $stage_num = 0;
         for my $stage (@_) {
+            $stage_num++;
             for my $type ("total", "fwd", "rev", "orphans") {
                 next if $type eq "orphans"
                     and not $stage->DOES("Orphans");
@@ -122,6 +125,7 @@ package App::Dwindling {
                 my $subset = $type eq "total" ? $stage : $stage->$type
                     or next;
                 $csv->print($out, [
+                    $stage_num,
                     $stage->name,
                     $type,
                     $subset->read_count,
