@@ -1,0 +1,45 @@
+#!/usr/bin/env Rscript
+# vim: set ft=r ts=2 sw=2:
+#
+# Plot CSV from dwindling-reads as an SVG
+#
+# usage: dwindling-plot input.csv output.svg
+#        dwindling-plot input.csv > output.svg
+#        dwindling-plot < input.csv > output.svg
+#
+library(ggplot2)
+
+args = commandArgs( trailingOnly = T )
+input  = if (!is.na(args[1])) args[1] else "stdin"
+output = if (!is.na(args[2])) args[2] else "/dev/stdout"
+
+message("reading from ", input)
+message("writing to ", output)
+
+svg(output, width = 9, height = 8)
+dw = read.csv(input)
+
+# Plot helpers
+breaks = unique(dw$stage_num)
+stages = as.character(unique(dw$stage))
+fills  = c("lightgreen", "lightblue")
+colors = adjustcolor(c("darkgreen", "darkblue"), alpha.f = 0.6)
+
+ggplot(dw, aes(x = stage_num)) +
+  geom_ribbon(data = dw[dw$type == "fwd",], aes(ymin = 0,      ymax = count, fill = type)) +
+  geom_ribbon(data = dw[dw$type == "rev",], aes(ymin = -count, ymax = 0,     fill = type)) +
+  geom_ribbon(data = dw[dw$type == "fwd",], aes(ymin = 0,             ymax = mapped_count, color = type, fill = NA)) +
+  geom_ribbon(data = dw[dw$type == "rev",], aes(ymin = -mapped_count, ymax = 0,            color = type, fill = NA)) +
+  scale_y_continuous("Read count, reverse (-) / forward (+)") +
+  scale_x_reverse("Stage", labels = stages, breaks = breaks) +
+  coord_flip() +
+  scale_fill_manual(
+    values = fills,
+    labels = c("Forward", "Reverse")) +
+  scale_color_manual(
+    values = colors,
+    labels = c("Forward", "Reverse")) +
+  guides(
+    fill  = guide_legend("Total"),
+    color = guide_legend("Mapped", override.aes = list(fill = NA))) +
+  ggtitle("Flow of reads through stages of pipeline")
