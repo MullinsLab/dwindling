@@ -10,7 +10,9 @@ $(cpanm):
 bundle: $(cpanm) cpanfile
 	$(cpanm) -L inc --notest --mirror https://cpan.metacpan.org --mirror-only --verify --installdeps .
 
-README.md: dwindling-reads
+README.md: dwindling-reads INSTALL.md
 	(echo "# Dwindling Reads"; ./$< --help) \
 		| perl -pe 's/^(?=[\w -]+:$$)/## /' \
 		> $@
+	echo >> $@
+	cat INSTALL.md >> $@
