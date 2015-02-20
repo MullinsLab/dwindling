@@ -113,7 +113,7 @@ package App::Dwindling {
             or die "Cannot use CSV: ", Text::CSV->error_diag;
         my $out = \*STDOUT;
 
-        $csv->print($out, [qw(stage_num stage type count parent_stage percentage_of_parent discarded_from_parent)]);
+        $csv->print($out, [qw(stage_num stage type count parent_stage percentage_of_parent discarded_from_parent mapped_count)]);
 
         my $stage_num = 0;
         for my $stage (@_) {
@@ -131,7 +131,10 @@ package App::Dwindling {
                     $subset->read_count,
                     ($subset->parent
                         ? ($subset->parent->name, $subset->percentage_of_parent, $subset->discarded_read_count)
-                        : (undef) x 3)
+                        : (undef) x 3),
+                    ($subset->DOES("MappedCount")
+                        ? $subset->mapped_count
+                        : undef),
                 ]);
             }
         }

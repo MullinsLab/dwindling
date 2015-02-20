@@ -34,7 +34,7 @@ package BAM {
         isa  => InstanceOf["BAM", "FastQPE"],
     );
 
-    with 'ParentComparators';
+    with 'ParentComparators', 'MappedCount';
 
     sub _build_fwd { $_[0]->_build_single_end("fwd", @_) }
     sub _build_rev { $_[0]->_build_single_end("rev", @_) }
@@ -80,6 +80,10 @@ package BAM {
 
     sub read_count_tuple {
         ($_[0]->fwd->read_count, $_[0]->rev->read_count)
+    }
+
+    sub mapped_count {
+        $_[0]->_flagstat->{mapped}
     }
 }
 
