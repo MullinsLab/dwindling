@@ -1,23 +1,9 @@
-#!/usr/bin/env perl
-use strict;
-use warnings;
-use FindBin qw< $Bin $Script >;
-use lib map { "$Bin/$_" } qw(lib inc/lib/perl5);
+# Dwindling Reads
 
-use Getopt::Long;
-use App::Dwindling;
+## Usage:
 
-my %opt;
-GetOptions(\%opt, 'csv', 'help|h');
-
-sub usage {
-    my $Spacer = " " x length $Script;
-
-    "\n" . join("\n\n", @_, <<".");
-Usage:
-
-    $Script [--csv] ::: <stage1> <files> [::: <stage2> <files> [::: <stage3> <files>]
-    $Script --help
+    dwindling-reads [--csv] ::: <stage1> <files> [::: <stage2> <files> [::: <stage3> <files>]
+    dwindling-reads --help
 
 This program collates summary information from a set of next-gen sequencing
 paired-end reads at each stage of your pipeline.
@@ -32,18 +18,18 @@ only a single .bam file.
 
 The standard Unix utilities zcat and wc must be installed, as well as samtools.
 
-Options:
+## Options:
 
   --csv     output CSV instead of formatted text
   --help    print usage message and exit
 
-Examples:
+## Examples:
 
-    $Script ::: raw     raw/ABC_R1.fq.gz raw/ABC_R2.fq.gz \\
-    $Spacer ::: sickle  trimmed/ABC_R1.fq trimmed/ABC_R2.fq trimmed/ABC_orphans.fq \\
-    $Spacer ::: mapped  ABC.bam
+    dwindling-reads ::: raw     raw/ABC_R1.fq.gz raw/ABC_R2.fq.gz \
+                    ::: sickle  trimmed/ABC_R1.fq trimmed/ABC_R2.fq trimmed/ABC_orphans.fq \
+                    ::: mapped  ABC.bam
 
-Example output:
+## Example output:
 
     196300 raw = 98150 forward + 98150 reverse
 
@@ -57,19 +43,3 @@ Example output:
     (In this case, bwa mem found 270 reads with secondary mappings so the reads
      are growing not dwindling!)
 
-.
-}
-
-print(usage()), exit if $opt{help};
-
-my @args = parse_args(@ARGV) or do {
-    print STDERR usage("At least one set of files is required");
-    exit 1;
-};
-
-my @stages = stages_from(@args);
-if ($opt{csv}) {
-    stages_to_csv(@stages);
-} else {
-    stages_to_text(@stages);
-}
