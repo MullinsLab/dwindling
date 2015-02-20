@@ -20,8 +20,8 @@ The standard Unix utilities zcat and wc must be installed, as well as samtools.
 
 ## Options:
 
-  --csv     output CSV instead of formatted text
-  --help    print usage message and exit
+    --csv     output CSV instead of formatted text
+    --help    print usage message and exit
 
 ## Examples:
 
