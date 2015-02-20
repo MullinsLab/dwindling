@@ -1,4 +1,4 @@
-requires 'perl', '5.008005';
+requires 'perl', '5.014';
 
 requires 'base';
 requires 'FindBin';
