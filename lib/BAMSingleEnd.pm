@@ -7,11 +7,7 @@ package BAMSingleEnd {
     use String::ShellQuote qw< shell_quote >;
     use namespace::clean;
 
-    has bam => (
-        required => 1,
-        is       => 'ro',
-        isa      => InstanceOf["BAM"],
-    );
+    extends 'BAMSubset';
 
     has direction => (
         required => 1,
@@ -19,35 +15,44 @@ package BAMSingleEnd {
         isa      => Enum[qw[fwd rev]],
     );
 
-    has name => (
-        is      => 'ro',
+    has '+name' => (
         default => sub { join ":", $_[0]->bam->name, $_[0]->direction },
     );
 
-    has read_count => (
-        required => 1,
-        is       => 'ro',
-        isa      => Int,
+    has '+flags' => (
+        default => sub {
+            0x1 | { fwd => 0x40, rev => 0x80 }->{$_[0]->direction}
+        },
     );
 
-    has mapped_count => (
+    has '+parent' => (
+        # More restrictive than BAMSubset
+        isa => InstanceOf["BAMSingleEnd", "FastQ"],
+    );
+
+    has mapped => (
         is  => 'lazy',
-        isa => Int,
+        isa => InstanceOf["BAMSubset"],
     );
 
-    has parent => (
-        is   => 'ro',
-        isa  => InstanceOf["BAMSingleEnd", "FastQ"],
-    );
+    with 'Mapped';
 
-    with 'ParentComparators', 'MappedCount';
-
-    sub _build_mapped_count {
-        my $self  = shift;
-        my $file  = shell_quote($self->bam->file);
-        my $flags = 0x1 | 0x4 | { fwd => 0x40, rev => 0x80 }->{$self->direction};
+    sub _build_mapped {
         my $unmapped = `samtools view -f $flags $file | wc -l`;
         return $self->read_count - $unmapped;
+
+        my $flags = 0x1 | 0x4 | { fwd => 0x40, rev => 0x80 }->{$self->direction};
+
+        my $self  = shift;
+        BAMSubset->new(
+            bam     => $self->bam,
+            flags   => $
+            parent  => 
+            read_count  => $self->_flagstat->{ {fwd => "read1", rev => "read2"}->{$direction} },
+            ($self->parent
+                ? (parent => $self->parent->$direction)
+                : ()),
+        );
     }
 }
 
