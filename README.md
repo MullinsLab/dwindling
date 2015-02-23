@@ -45,6 +45,10 @@ counts through the various stages.
 are growing not dwindling!)
 
 
+## `dwindling-plot` example
+
+![plot example](examples/plot.svg)
+
 # Installation
 
 ## `dwindling-reads`
