@@ -30,7 +30,8 @@ reverse reads.  An optional third file may be specified for single-end orphans,
 such as those commonly produced by quality trimmers.  BAM stages must specify
 only a single .bam file.
 
-The standard Unix utilities zcat and wc must be installed, as well as samtools.
+CSV output may be piped into dwindling-plot to produce an SVG plot of the read
+counts through the various stages.
 
 Options:
 
@@ -54,8 +55,8 @@ Example output:
     161910 mapped = 80820 forward + 80820 reverse (= 100.17% of sickle)
       -270 discarded (= -0.17% of sickle)
 
-    (In this case, bwa mem found 270 reads with secondary mappings so the reads
-     are growing not dwindling!)
+(In this case, bwa mem found 270 reads with secondary mappings so the reads
+are growing not dwindling!)
 
 .
 }

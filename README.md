@@ -16,7 +16,8 @@ reverse reads.  An optional third file may be specified for single-end orphans,
 such as those commonly produced by quality trimmers.  BAM stages must specify
 only a single .bam file.
 
-The standard Unix utilities zcat and wc must be installed, as well as samtools.
+CSV output may be piped into dwindling-plot to produce an SVG plot of the read
+counts through the various stages.
 
 ## Options:
 
@@ -40,13 +41,15 @@ The standard Unix utilities zcat and wc must be installed, as well as samtools.
     161910 mapped = 80820 forward + 80820 reverse (= 100.17% of sickle)
       -270 discarded (= -0.17% of sickle)
 
-    (In this case, bwa mem found 270 reads with secondary mappings so the reads
-     are growing not dwindling!)
+(In this case, bwa mem found 270 reads with secondary mappings so the reads
+are growing not dwindling!)
 
 
 # Installation
 
-This software requires the following 
+## `dwindling-reads`
+
+Requires:
 
 * Perl 5.14 or newer
 * zcat (distributed with gzip)
@@ -66,3 +69,17 @@ from within a clone of the git repository.  This command will download
 [cpanm](https://metacpan.org/pod/App::cpanminus) and use it to install the
 required dependencies into the `inc/` directory.  The `dwindling-reads` program
 will automatically use libraries in this directory if they exist.
+
+## `dwindling-plot`
+
+Requires:
+
+* R 3.0.0 or newer
+* [ggplot2](http://ggplot2.org/)
+* [Cairo](http://www.rforge.net/Cairo/) R package
+
+You can generally just install the two R packages like so:
+
+    Rscript -e 'install.packages(commandArgs(T))' ggplot2 Cairo
+
+To install them system-wide, use `sudo Rscript`.
