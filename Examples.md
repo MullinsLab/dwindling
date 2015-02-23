@@ -1,3 +1,3 @@
 ## `dwindling-plot` example
 
-![plot example](examples/plot.svg)
+![plot example](examples/plot.png)

@@ -18,3 +18,6 @@ README.md: dwindling-reads Examples.md INSTALL.md
 		echo >> $@; \
 		cat $$file >> $@; \
 	done
+
+%.png: %.svg
+	cairosvg -f png -o $@ $<
