@@ -19,6 +19,11 @@ message("writing to ", output)
 svg(output, width = 9, height = 8)
 dw = read.csv(input)
 
+# Use mapped count if available, otherwise raw count
+dw$raw_or_mapped_count = NA
+dw[ is.na(dw$mapped_count),]$raw_or_mapped_count = dw[ is.na(dw$mapped_count),]$count
+dw[!is.na(dw$mapped_count),]$raw_or_mapped_count = dw[!is.na(dw$mapped_count),]$mapped_count
+
 # Plot helpers
 breaks = unique(dw$stage_num)
 stages = as.character(unique(dw$stage))
@@ -26,10 +31,8 @@ fills  = c("lightgreen", "lightblue")
 colors = adjustcolor(c("darkgreen", "darkblue"), alpha.f = 0.6)
 
 ggplot(dw, aes(x = stage_num)) +
-  geom_ribbon(data = dw[dw$type == "fwd",], aes(ymin = 0,      ymax = count, fill = type)) +
-  geom_ribbon(data = dw[dw$type == "rev",], aes(ymin = -count, ymax = 0,     fill = type)) +
-  geom_ribbon(data = dw[dw$type == "fwd",], aes(ymin = 0,             ymax = mapped_count, color = type, fill = NA)) +
-  geom_ribbon(data = dw[dw$type == "rev",], aes(ymin = -mapped_count, ymax = 0,            color = type, fill = NA)) +
+  geom_ribbon(data = dw[dw$type == "fwd",], aes(ymax =  raw_or_mapped_count, ymin = 0, fill = type)) +
+  geom_ribbon(data = dw[dw$type == "rev",], aes(ymin = -raw_or_mapped_count, ymax = 0, fill = type)) +
   scale_y_continuous("Read count, reverse (-) / forward (+)") +
   scale_x_reverse("Stage", labels = stages, breaks = breaks) +
   coord_flip() +
