@@ -8,7 +8,7 @@ $(cpanm):
 	chmod +x $@
 
 bundle: $(cpanm) cpanfile
-	$(cpanm) -L inc --notest --mirror https://cpan.metacpan.org --mirror-only --verify --installdeps .
+	$(cpanm) -l inc --notest --mirror https://cpan.metacpan.org --mirror-only --verify --installdeps .
 
 README.md: dwindling-reads Examples.md INSTALL.md
 	(echo "# Dwindling Reads"; ./$< --help) \
