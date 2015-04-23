@@ -1,7 +1,9 @@
+use 5.014;
 use strict;
 use warnings;
 
 package App::Dwindling {
+    use Getopt::Long qw< GetOptionsFromArray >;
     use FastQPE;
     use BAM;
     use base 'Exporter::Tiny';
@@ -9,20 +11,18 @@ package App::Dwindling {
 
     sub parse_args {
         my @args = @_;
-        unshift @args, '--stage'
-            unless ($args[0] || '') eq '--stage'
-                or not @args;
 
-        # Partition into ([name, fwd, rev], [name, ...])
-        my $index = -1;
-        for (splice @args) {
-            if ($_ eq '--stage') {
-                $args[++$index] = [];
-            } else {
-                push @{ $args[$index] }, $_;
-            }
-        }
-        return @args;
+        # Parse --stage options into ([name, fwd, rev], [name, ...])
+        my @stages;
+        GetOptionsFromArray(
+            \@args,
+            'stage=s{2,4}' => sub {
+                state $group = 0;
+                push @{ $stages[$group] ||= [] }, $_[1];
+                $group++ if $args[0] and $args[0] =~ /^-/;
+            },
+        ) or die "Invalid arguments";
+        return @stages;
     }
 
     sub stages_from {
