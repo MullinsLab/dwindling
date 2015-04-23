@@ -9,14 +9,14 @@ package App::Dwindling {
 
     sub parse_args {
         my @args = @_;
-        unshift @args, ':::'
-            unless ($args[0] || '') eq ':::'
+        unshift @args, '--stage'
+            unless ($args[0] || '') eq '--stage'
                 or not @args;
 
-        # Partition into ([:::, fwd, rev], [:::, ...])
+        # Partition into ([name, fwd, rev], [name, ...])
         my $index = -1;
         for (splice @args) {
-            if ($_ eq ':::') {
+            if ($_ eq '--stage') {
                 $args[++$index] = [];
             } else {
                 push @{ $args[$index] }, $_;

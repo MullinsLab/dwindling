@@ -4,7 +4,7 @@ use warnings;
 use FindBin qw< $Bin $Script >;
 use lib map { "$Bin/$_" } qw(lib inc/lib/perl5);
 
-use Getopt::Long;
+use Getopt::Long qw< :config require_order no_permute pass_through >;
 use App::Dwindling;
 
 my %opt;
@@ -16,19 +16,19 @@ sub usage {
     "\n" . join("\n\n", @_, <<".");
 Usage:
 
-    $Script [--csv] ::: <stage1> <files> [::: <stage2> <files> [::: <stage3> <files>]
+    $Script [--csv] --stage <stage1> <files> [--stage <stage2> <files> [--stage <stage3> <files>]
     $Script --help
 
 This program collates summary information from a set of next-gen sequencing
 paired-end reads at each stage of your pipeline.
 
-Each stage is separated by three colons (:::), followed by two to four
-arguments.  The first argument is an arbitrary name of your choosing to
-identify that stage.  Both FastQ (uncompressed and gzipped) and BAM files are
-supported.  FastQ stages must specify at least two files for forward and
-reverse reads.  An optional third file may be specified for single-end orphans,
-such as those commonly produced by quality trimmers.  BAM stages must specify
-only a single .bam file.
+Each stage is specified by --stage, followed by two to four arguments.  The
+first argument is an arbitrary name of your choosing to identify that stage.
+Both FastQ (uncompressed and gzipped) and BAM files are supported.  FastQ
+stages must specify at least two files for forward and reverse reads.  An
+optional third file may be specified for single-end orphans, such as those
+commonly produced by quality trimmers.  BAM stages must specify only a single
+.bam file.
 
 CSV output may be piped into dwindling-plot to produce an SVG plot of the read
 counts through the various stages.
@@ -40,9 +40,9 @@ Options:
 
 Examples:
 
-    $Script ::: raw     raw/ABC_R1.fq.gz raw/ABC_R2.fq.gz \\
-    $Spacer ::: sickle  trimmed/ABC_R1.fq trimmed/ABC_R2.fq trimmed/ABC_orphans.fq \\
-    $Spacer ::: mapped  ABC.bam
+    $Script --stage raw     raw/ABC_R1.fq.gz raw/ABC_R2.fq.gz \\
+    $Spacer --stage sickle  trimmed/ABC_R1.fq trimmed/ABC_R2.fq trimmed/ABC_orphans.fq \\
+    $Spacer --stage mapped  ABC.bam
 
 Example output:
 

@@ -2,19 +2,19 @@
 
 ## Usage:
 
-    dwindling-reads [--csv] ::: <stage1> <files> [::: <stage2> <files> [::: <stage3> <files>]
+    dwindling-reads [--csv] --stage <stage1> <files> [--stage <stage2> <files> [--stage <stage3> <files>]
     dwindling-reads --help
 
 This program collates summary information from a set of next-gen sequencing
 paired-end reads at each stage of your pipeline.
 
-Each stage is separated by three colons (:::), followed by two to four
-arguments.  The first argument is an arbitrary name of your choosing to
-identify that stage.  Both FastQ (uncompressed and gzipped) and BAM files are
-supported.  FastQ stages must specify at least two files for forward and
-reverse reads.  An optional third file may be specified for single-end orphans,
-such as those commonly produced by quality trimmers.  BAM stages must specify
-only a single .bam file.
+Each stage is specified by --stage, followed by two to four arguments.  The
+first argument is an arbitrary name of your choosing to identify that stage.
+Both FastQ (uncompressed and gzipped) and BAM files are supported.  FastQ
+stages must specify at least two files for forward and reverse reads.  An
+optional third file may be specified for single-end orphans, such as those
+commonly produced by quality trimmers.  BAM stages must specify only a single
+.bam file.
 
 CSV output may be piped into dwindling-plot to produce an SVG plot of the read
 counts through the various stages.
@@ -26,9 +26,9 @@ counts through the various stages.
 
 ## Examples:
 
-    dwindling-reads ::: raw     raw/ABC_R1.fq.gz raw/ABC_R2.fq.gz \
-                    ::: sickle  trimmed/ABC_R1.fq trimmed/ABC_R2.fq trimmed/ABC_orphans.fq \
-                    ::: mapped  ABC.bam
+    dwindling-reads --stage raw     raw/ABC_R1.fq.gz raw/ABC_R2.fq.gz \
+                    --stage sickle  trimmed/ABC_R1.fq trimmed/ABC_R2.fq trimmed/ABC_orphans.fq \
+                    --stage mapped  ABC.bam
 
 ## Example output:
 
